@@ -7,11 +7,7 @@
     <title>screens in screens</title>
     <style>
         body {
-            background: #000;
-        }
-
-        canvas {
-            background: #222;
+            background: #1a1a1b;
         }
     </style>
 </head>
@@ -35,7 +31,7 @@
             }
         }
 
-        let rects = { 'cyan': new RectClass(), 'red': new RectClass(), 'green': new RectClass(), 'orange': new RectClass(), 'purple': new RectClass() };
+        let rects = { 'cyan': new RectClass(), 'yellow': new RectClass(), 'orange': new RectClass(), 'tomato': new RectClass(), 'violet': new RectClass() };
 
 
         let color = 'cyan';
@@ -82,10 +78,10 @@
                 case '4':
                 case '5':
                     color = ['cyan',
-                        'red',
-                        'green',
+                        'violet',
+                        'tomato',
                         'orange',
-                        'purple'][parseInt(ev.key) - 1];
+                        'yellow'][parseInt(ev.key) - 1];
                     break;
             }
         }
@@ -115,7 +111,7 @@
         draw();
         function draw() {
             requestAnimationFrame(draw);
-            ctx.fillStyle = '#222';
+            ctx.fillStyle = '#202530';
             ctx.fillRect(0, 0, W, W);
 
             for (const key in rects) {
