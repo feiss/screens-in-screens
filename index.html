@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>screens in screens</title>
+    <style>
+        body {
+            background: #000;
+        }
+
+        canvas {
+            background: #222;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas></canvas>
+
+    <script>
+        const W = 1000;
+        let canvas = document.querySelector('canvas');
+        canvas.width = W;
+        canvas.height = W;
+        let ctx = canvas.getContext('2d');
+
+
+        class RectClass {
+            constructor() {
+                this.members = [];
+                this.children = [];
+            }
+        }
+
+        let rects = { 'cyan': new RectClass(), 'red': new RectClass(), 'green': new RectClass(), 'orange': new RectClass(), 'purple': new RectClass() };
+
+
+        let color = 'cyan';
+        let current = null;
+
+        function init() {
+            canvas.addEventListener('mousedown', mouse);
+            canvas.addEventListener('mousemove', mouse);
+            canvas.addEventListener('mouseup', mouse);
+            document.addEventListener('keyup', key);
+        }
+
+        function mouse(ev) {
+            let p = { x: ev.offsetX, y: ev.offsetY };
+            switch (ev.type) {
+                case 'mousedown':
+                    current = new Rect(p.x, p.y, 1, 1, color);
+                    current.update_relative_coords();
+                    // draw();
+                    break;
+                case 'mousemove':
+                    if (current !== null) {
+                        current.w = p.x - current.x;
+                        current.h = p.y - current.y;
+                        check_insides(current);
+                        // draw();
+                    }
+                    break;
+                case 'mouseup':
+                    // relative to canvas
+                    check_insides(current);
+                    rects[current.color].members.push(current);
+                    current = null;
+                    // draw();
+                    break;
+            }
+        }
+
+        function key(ev) {
+            switch (ev.key) {
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                    color = ['cyan',
+                        'red',
+                        'green',
+                        'orange',
+                        'purple'][parseInt(ev.key) - 1];
+                    break;
+            }
+        }
+        init();
+
+
+        function check_insides(current) {
+            //find the smaller enclosing parent
+            let smaller_parent = new Rect(0, 0, W, W);
+
+            for (const key in rects) {
+                if (key == current.color) continue; // recursive green inside green --ignore for now
+                for (const rect of rects[key].members) {
+                    if (current.is_inside(rect) && rect.w < smaller_parent.w && rect.h < smaller_parent.h) {
+                        smaller_parent = rect;
+                    }
+                }
+            }
+            current.update_relative_coords(smaller_parent);
+            if (!smaller_parent.is_canvas()) {
+                if (!rects[smaller_parent.color].children.find(item => item.id == current.id)) {
+                    rects[smaller_parent.color].children.push(current);
+                }
+            }
+        }
+
+        draw();
+        function draw() {
+            requestAnimationFrame(draw);
+            ctx.fillStyle = '#222';
+            ctx.fillRect(0, 0, W, W);
+
+            for (const key in rects) {
+                for (const rect of rects[key].members) {
+                    if (!rect.has_parent()) rect.draw();
+                }
+            }
+
+            if (current && !current.has_parent()) {
+                current.draw();
+            }
+        }
+
+
+        let _rect_ids = 1;
+        class Rect {
+            constructor(x, y, w, h, color) {
+                this.id = color !== undefined ? _rect_ids++ : 0;
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.color = color;
+                // relative coords and size
+                this.parent = 0;
+                this.relative = null;
+            }
+
+            is_canvas() {
+                return this.id === 0;
+            }
+
+            has_parent() {
+                return this.parent !== 0;
+            }
+
+            update_relative_coords(parent) {
+                if (parent === undefined) {
+                    parent = new Rect(0, 0, W, W);
+                } else {
+                    this.parent = parent.id;
+                }
+                this.relative = new Rect(
+                    (this.x - parent.x) / parent.w,
+                    (this.y - parent.y) / parent.h,
+                    this.w / parent.w,
+                    this.h / parent.h,
+                );
+            }
+
+            draw(parent) {
+                if (parent === undefined) {
+                    parent = new Rect(0, 0, W, W); // no parent, take whole canvas
+                }
+                ctx.beginPath();
+                let r = this.apply_parent(parent);
+                ctx.strokeStyle = this.color;
+                ctx.rect(r.x, r.y, r.w, r.h);
+                ctx.stroke();
+
+                for (const rect of rects[this.color].children) {
+                    rect.draw(r);
+                }
+            }
+
+            apply_parent(parent) {
+                return new Rect(
+                    parent.x + this.relative.x * parent.w,
+                    parent.y + this.relative.y * parent.h,
+                    parent.w * this.relative.w,
+                    parent.h * this.relative.h,
+                );
+            }
+
+            is_inside(r) {
+                return this.x > r.x && this.y > r.y && this.x + this.w < r.x + r.w && this.y + this.h < r.y + r.h
+            }
+        }
+
+
+    </script>
+
+</body>
+
+</html>
